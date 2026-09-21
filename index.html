@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>采购流程 A/B 实验沙盒 · PR 审批分级授权</title>
+<style>
+:root{
+  --bg:#f5f7fa; --card:#ffffff; --line:#e3e8ef; --line2:#eef2f7;
+  --tx:#1a2233; --tx2:#5c6b82; --tx3:#8a97ab;
+  --blue:#2b5cd9; --blue-bg:#eef3fe;
+  --green:#137a4b; --green-bg:#e9f7ef;
+  --red:#c0392b; --amber:#a86800; --amber-bg:#fdf4e3;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--tx);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+  font-size:15px; line-height:1.75; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:940px; margin:0 auto; padding:56px 24px 80px}
+
+/* ---------- 头部 ---------- */
+.hero{margin-bottom:44px}
+.kicker{
+  display:inline-block; font-size:12px; letter-spacing:.14em; font-weight:600;
+  color:var(--blue); background:var(--blue-bg); padding:5px 12px; border-radius:5px; margin-bottom:20px;
+}
+h1{
+  font-size:31px; line-height:1.32; margin:0 0 14px; letter-spacing:-.015em; font-weight:700;
+}
+.lede{font-size:16px; color:var(--tx2); margin:0 0 10px; max-width:760px}
+.lede b{color:var(--tx)}
+.chain{
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:12.5px; color:var(--tx2); background:var(--card);
+  border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin:22px 0 30px;
+  overflow-x:auto; white-space:nowrap;
+}
+.chain em{color:var(--blue); font-style:normal; font-weight:700}
+
+/* ---------- 主按钮 ---------- */
+.cta{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+.btn{
+  display:inline-flex; align-items:center; gap:9px; text-decoration:none;
+  padding:12px 22px; border-radius:8px; font-weight:600; font-size:15px;
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.btn-primary{background:var(--blue); color:#fff; box-shadow:0 2px 10px rgba(43,92,217,.28)}
+.btn-primary:hover{transform:translateY(-1px); box-shadow:0 5px 18px rgba(43,92,217,.34)}
+.btn-ghost{background:var(--card); color:var(--tx); border:1px solid var(--line)}
+.btn-ghost:hover{border-color:#c6d0e0}
+.btn small{opacity:.75; font-weight:500}
+
+/* ---------- 板块 ---------- */
+h2{
+  font-size:17px; margin:44px 0 16px; padding-bottom:11px;
+  border-bottom:1px solid var(--line); font-weight:700; letter-spacing:-.005em;
+}
+h2 span{color:var(--tx3); font-weight:600; margin-right:9px; font-size:14px}
+h3{font-size:14.5px; margin:26px 0 10px; font-weight:700; color:var(--tx)}
+p{margin:0 0 14px}
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:10px;
+  padding:22px 24px; margin:0 0 16px;
+}
+.card p:last-child{margin-bottom:0}
+
+/* ---------- 表格 ---------- */
+table{width:100%; border-collapse:collapse; margin:4px 0 16px; font-size:14px}
+th,td{padding:11px 13px; text-align:left; border-bottom:1px solid var(--line2)}
+th{font-weight:600; color:var(--tx2); font-size:13px; background:#fafbfd}
+tbody tr:last-child td{border-bottom:none}
+td.num{font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
+.hl{color:var(--blue); font-weight:700}
+.warn{color:var(--amber); font-weight:600}
+.ok{color:var(--green); font-weight:600}
+.table-wrap{background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:16px}
+.table-wrap table{margin:0}
+.table-wrap th:first-child,.table-wrap td:first-child{padding-left:22px}
+.table-wrap th:last-child,.table-wrap td:last-child{padding-right:22px}
+
+/* ---------- 发现卡 ---------- */
+.findings{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(255px,1fr)); margin-bottom:16px}
+.finding{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px 22px}
+.finding .n{
+  width:25px; height:25px; border-radius:6px; background:var(--blue-bg); color:var(--blue);
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; margin-bottom:13px;
+}
+.finding h4{margin:0 0 9px; font-size:14.5px; font-weight:700; line-height:1.5}
+.finding p{font-size:13.5px; color:var(--tx2); margin:0; line-height:1.72}
+.finding em{font-style:normal; font-weight:700; color:var(--tx)}
+
+/* ---------- 提示条 ---------- */
+.note{
+  border-left:3px solid var(--amber); background:var(--amber-bg);
+  border-radius:0 8px 8px 0; padding:16px 20px; margin:0 0 16px; font-size:14px; color:#6b4a00;
+}
+.note.info{border-left-color:var(--blue); background:var(--blue-bg); color:#1e3d85}
+.note strong{font-weight:700}
+
+/* ---------- 列表 ---------- */
+ul{ margin:0 0 14px; padding-left:20px }
+li{ margin-bottom:7px }
+
+/* ---------- 目录树 ---------- */
+pre{
+  background:#1e2433; color:#dbe2ef; border-radius:9px; padding:18px 20px; overflow-x:auto;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:12.5px; line-height:1.72; margin:0 0 16px;
+}
+pre b{color:#7fa8ff; font-weight:600}
+pre i{color:#8a97ab; font-style:normal}
+
+/* ---------- 页脚 ---------- */
+footer{
+  margin-top:52px; padding-top:22px; border-top:1px solid var(--line);
+  font-size:12.5px; color:var(--tx3); line-height:1.85;
+}
+footer a{color:var(--tx2)}
+@media (max-width:640px){
+  .wrap{padding:36px 18px 60px}
+  h1{font-size:25px}
+  .lede{font-size:15px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker">供应链 · 采购流程实验</div>
+    <h1>采购流程 A/B 实验沙盒<br>PR 审批分级授权</h1>
+    <p class="lede">
+      把「低值低风险采购申请的串行人工审批」换成「规则引擎自动放行 + 事后审计」，
+      并用规范的 A/B 方法论把这个改动验证清楚。
+    </p>
+    <p class="lede">
+      <b>数据来自两份公开真实采购数据源</b> —— USASpending.gov 的 381.8 万条联邦合同金额分布、
+      World Bank 的采购公告构成。流程耗时部分为结构化仿真，已在文末明确标注。
+    </p>
+
+    <div class="chain">
+      需求提出 → 创建 PR → <em>【PR 审批 ✦ 本实验唯一干预点】</em> → 询价/定点 → PO 签发 → 收货 → 三单匹配 → 付款
+    </div>
+
+    <div class="cta">
+      <a class="btn btn-primary" href="procurement-ab-sandbox/index.html">进入沙盒 <small>六个页签 · 可交互</small></a>
+      <a class="btn btn-ghost" href="https://github.com/TomStones26/procurement-ab-sandbox">查看源码</a>
+    </div>
+  </div>
+
+  <h2><span>01</span>结论先行</h2>
+
+  <p>沙盒默认结果（种子 20260、日均 380 条 PR、28 天、自动放行阈值 ¥50,000）：</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>指标</th>
+          <th style="text-align:right">对照组 A<br><small style="font-weight:400;color:var(--tx3)">两级串行人工审批</small></th>
+          <th style="text-align:right">实验组 B<br><small style="font-weight:400;color:var(--tx3)">规则引擎自动放行</small></th>
+          <th>变化</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>PR→PO 周期</b>（几何均值）</td>
+          <td class="num">47.1 h</td>
+          <td class="num">33.1 h</td>
+          <td class="hl">−29.6%</td>
+        </tr>
+        <tr>
+          <td>48h 完成率</td>
+          <td class="num">53.9%</td>
+          <td class="num">64.6%</td>
+          <td class="hl">+10.6 pp</td>
+        </tr>
+        <tr>
+          <td>事后审计异常率 <small style="color:var(--tx3)">护栏</small></td>
+          <td class="num">1.11%</td>
+          <td class="num">1.89%</td>
+          <td class="warn">+0.78 pp</td>
+        </tr>
+        <tr>
+          <td>采购价格偏差 <small style="color:var(--tx3)">护栏</small></td>
+          <td class="num">+0.27%</td>
+          <td class="num">+1.42%</td>
+          <td class="warn">+1.15 pp</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note info">
+    <strong>落地建议：有条件放量上线。</strong>
+    主指标 95% 置信区间 [−31.9%, −27.4%]，效应确定。两项护栏均未越过事前设定的非劣界
+    （异常率 1.0 pp、价格偏差 1.5 pp），但都已进入「需持续监控」区间 —— 限金额阈值、限低风险品类、全量留痕、设熔断条件。
+  </div>
+
+  <h2><span>02</span>三条最值得记住的发现</h2>
+
+  <div class="findings">
+    <div class="finding">
+      <div class="n">1</div>
+      <h4>效果确实存在，而且很大</h4>
+      <p>周期从 <em>47.1 小时</em>降到 <em>33.1 小时</em>，降幅 29.6%。这不是"审批快了一点"，而是<em>有三分之一的采购申请当天就能走完流程</em>。</p>
+    </div>
+    <div class="finding">
+      <div class="n">2</div>
+      <h4>护栏指标根本测不动</h4>
+      <p>主指标只要 <em>45 条</em>样本就有 80% 把握检出效应，护栏要 <em>23,228 条</em>，<em>相差 516 倍</em>。<br>
+      按 380 条/天算：主指标 <em>1 天</em>可测，护栏要 <em>122 天</em>。<br>
+      → 护栏不能用"统计显著"当判据，只能用<em>方向 + 非劣界 + 持续监控 + 熔断</em>。</p>
+    </div>
+    <div class="finding">
+      <div class="n">3</div>
+      <h4>抽检比例救不了你</h4>
+      <p>把事后抽检从 10% 拉到 40%，护栏点估计几乎不动。因为<em>抽检覆盖率就是异常发现率的上限</em> —— 抽 10% 最多只能看见 10% 的问题，真实异常率必然被系统性低估。</p>
+    </div>
+  </div>
+
+  <h2><span>03</span>数据来源与诚实边界</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>数据源</th><th>用途</th><th>许可</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>USASpending.gov</b><br><small style="color:var(--tx3)">/api/v2/search/</small></td>
+          <td>43 个对数金额分带的真实计数 → 还原金额密度；供应商 / PSC / NAICS 聚合</td>
+          <td>公有领域</td>
+        </tr>
+        <tr>
+          <td><b>World Bank</b><br><small style="color:var(--tx3)">Procurement Notices</small></td>
+          <td>世行采购公告 1,000 条，用于采购方式构成</td>
+          <td>CC BY 3.0 IGO</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    采集规模：43 个金额分带 × 2 个财年（FY2023 / FY2025）逐带调用计数接口，得到
+    <b>3,818,521 条</b>真实合同的金额分布，覆盖 $1,000 – $37M 区间，占该期间全部合同动作的 35.5%。
+  </p>
+
+  <div class="note">
+    <strong>⚠ 用在哪、没用在哪，必须分清楚。</strong><br>
+    <b>用了</b>：金额分布的<b>形状</b>（直接抽经验分布）、品类与供应商构成、采购方式构成。<br>
+    <b>没用</b>：公开数据里<b>没有 PR 级审批时间戳</b>。流程耗时部分由结构化仿真生成，<b>不是实测</b>。
+    量级不可直接套用，只做了一次显式可追溯的尺度平移（真实中位数 $5,624 → 沙盒 ¥18,000），并在 P99 处截断。<br>
+    <b>落地前必须用企业内部 OA / 采购系统日志重新标定。</b>
+  </div>
+
+  <h3>一个实测结论：这笔钱的分布不是对数正态</h3>
+
+  <p>这一点决定了沙盒的抽样方式，值得单独说：</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>拟合方式</th><th style="text-align:right">预测 P99</th><th style="text-align:right">实测 P99</th><th>偏差</th></tr></thead>
+      <tbody>
+        <tr><td>四分位距反推 σ</td><td class="num">$384,268</td><td class="num">$2,998,077</td><td class="warn">低估 7.8 倍</td></tr>
+        <tr><td>对数空间最小二乘</td><td class="num">虚高约 4,898 倍</td><td class="num">—</td><td class="warn">高估 4,898 倍</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    两个方向都失败。小额区间同样明显：$1,000–$1,500 这一带，对数正态只预测出实测计数的 <b>38%</b>。
+    所以沙盒<b>不引入任何参数化假设</b>，金额直接从经验分布抽样。
+  </p>
+
+  <h2><span>04</span>沙盒里有什么</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>页签</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td><b>1 业务与聚焦点</b></td><td>为什么选这个环节、四段式说明、一页速查表、事前冻结的假设与决策规则</td></tr>
+        <tr><td><b>2 数据源与基线</b></td><td>真实数据来源、金额分布及其<b>对数正态假设检验</b>、供应商集中度、品类构成</td></tr>
+        <tr><td><b>3 实验设计</b></td><td>指标树、随机化与分流方案、样本量规划器、<b>护栏指标样本量规划器</b>、A/A 验证</td></tr>
+        <tr><td><b>4 沙盒运行</b></td><td>参数面板 + 逐日回放动画 + KPI + 累积效应图 + 序贯检验轨迹 + SRM 监控</td></tr>
+        <tr><td><b>5 统计诊断</b></td><td>多方法对照、CUPED、异质性森林图、护栏非劣检验、BH 多重比较校正</td></tr>
+        <tr><td><b>6 决策与规范</b></td><td>判据核对表、落地条件、年化收益估算、A/B 规范清单、已知局限、下一步</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>值得动手试的几个旋钮</h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:42%">操作</th><th>会看到什么</th></tr></thead>
+      <tbody>
+        <tr><td>自动放行阈值 ¥5 万 → ¥100 万</td><td>主指标继续变好（周期比 0.70→0.62），但<b>护栏先崩</b> —— 价格偏差越过 1.5pp 非劣界，结论从「有条件放量」变成「先补管控」</td></tr>
+        <tr><td>事后抽检比例 10% → 40%</td><td>护栏点估计几乎不动 —— 覆盖率就是发现率上限，抽检兜不住</td></tr>
+        <tr><td>实验组流量偏移拉到 ±3%</td><td>SRM 检验报警拦截，整个实验被判定无效</td></tr>
+        <tr><td>实验天数降到 7 天</td><td>主指标仍显著，但护栏指标完全测不出来</td></tr>
+        <tr><td>点「运行 A/A 验证」</td><td>假阳性率实测：单次检验 5.3% ／ 每天偷看不校正 <b>27.7%</b> ／ OBF 序贯边界 5.0%</td></tr>
+        <tr><td>换随机种子</td><td>结论稳定（层效应已固定为零均值表，基线不随种子漂移）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2><span>05</span>方法论要点（可直接当团队 SOP）</h2>
+
+  <h3>事前</h3>
+  <ul>
+    <li>主指标唯一且冻结口径：PR→PO 周期，用<b>对数尺度几何均值比</b>（重尾数据用算术均值会被尾部带跑）</li>
+    <li>护栏指标设<b>非劣界</b>而非显著性判据：审计异常 &lt; 1.0 pp、价格偏差 &lt; 1.5 pp</li>
+    <li>MDE 与样本量开跑前算好：要检出 12% 的周期改善，每组需 346 条、合计 692 条（约 1.8 天）</li>
+    <li><b>A/A 验证过分析管线</b>：单次检验假阳性率 5.3%，接近 5% 才算可信</li>
+    <li>停止规则事前确定，不允许事后改</li>
+  </ul>
+
+  <h3>事中</h3>
+  <ul>
+    <li>SRM 每日监控，两级判定：<code>p&lt;0.001</code> 或偏离 &gt;2% → 硬失败；<code>p&lt;0.01</code> → 告警</li>
+    <li>序贯检验用 <b>Lan-DeMets O'Brien-Fleming 消耗函数 + Armitage–McPherson 精确积分</b>求临界值，<b>不是</b> <code>1.96·√(K/k)</code> 近似。实测整体第一类错误率 5.0%（K=28）、4.0%（K=56）</li>
+  </ul>
+
+  <h3>事后</h3>
+  <ul>
+    <li>同一效应用四种方法算，口径一致才下结论（对数 t / 原始 t / Bootstrap 中位数 / CUPED）</li>
+    <li><b>CUPED 压方差</b>：用「同品类同金额档的历史平均审批时长」作协变量，实测 ρ=0.570、方差缩减 <b>34.5%</b>，等效于凭空多出 53% 的样本</li>
+    <li><b>ITT 与 CACE 都报</b>：覆盖率仅 33%，ITT 显示周期降 30%，被覆盖人群实际降 66% —— <b>差一倍以上，不能只报一个</b></li>
+    <li><b>异质性（CATE）</b>：效应集中在低风险品类（0.457×）与覆盖人群（0.332×），高风险品类无变化</li>
+    <li><b>BH 校正</b>：次指标与护栏一起检验了 6 项，不做校正等于偷偷放水</li>
+  </ul>
+
+  <h2><span>06</span>目录结构</h2>
+
+<pre>.
+├── <b>index.html</b>                      <i>← 本页（GitHub Pages 入口）</i>
+├── <b>procurement-ab-sandbox/</b>         <i>← 沙盒本体（纯前端，浏览器直接打开）</i>
+│   ├── index.html                  <i>页面结构（六个页签）</i>
+│   ├── styles.css                  <i>样式（浅色主题）</i>
+│   ├── engine.js                   <i>内核：随机数 / 分布 / 精确序贯边界 / 采购流程仿真</i>
+│   ├── app.js                      <i>前端逻辑：自绘 SVG 图表、交互、结果渲染</i>
+│   ├── data.js                     <i>真实数据基线画像（由 pipeline 生成）</i>
+│   └── README.md                   <i>沙盒详细说明（完整方法论与已知局限）</i>
+│
+└── <b>pipeline/</b>                       <i>← 可复现的数据采集与基线生成</i>
+    ├── 01_fetch_amount_bands.py    <i>金额分带计数（USASpending）</i>
+    ├── 02_fetch_category_aggregates.py  <i>供应商 / 品类 / 机构聚合</i>
+    ├── 03_build_baseline.py        <i>汇总生成 data.js</i>
+    ├── data/                       <i>原始数据快照</i>
+    ├── tests/                      <i>Node 验证脚本（端到端 / 序贯 / 种子 / 护栏 / 引擎）</i>
+    └── README.md                   <i>踩坑记录（5 条，含端点用法陷阱）</i></pre>
+
+  <h2><span>07</span>已知局限（诚实清单）</h2>
+
+  <div class="card">
+    <ol style="margin:0; padding-left:22px">
+      <li><b>流程耗时是仿真，不是实测。</b>公开数据没有 PR 级审批时间戳。落地前必须用企业内部 OA / 采购系统日志重新标定。</li>
+      <li><b>无长期效应评估。</b>4 周实验看不出「申请人是否会把大额采购拆成小额来钻阈值空子」。</li>
+      <li><b>ITT 低估价值，CACE 高估可推广性。</b>阈值上调后边际人群风险画像更差，效应与护栏都不能线性外推。</li>
+      <li><b>轻度溢出污染。</b>同一采购员同时处理两套流程，可能把新流程习惯带入对照组。</li>
+      <li><b>护栏测量误差。</b>10% 抽检最多只能发现 10% 的异常，真实异常率必然被低估。把抽检拉到 40% 也几乎不改变点估计。</li>
+    </ol>
+  </div>
+
+  <footer>
+    数据来源：<a href="https://usaspending.gov">USASpending.gov API</a>（公有领域）、
+    <a href="https://search.worldbank.org/api/v2/procnotices">World Bank Procurement Notices</a>（CC BY 3.0 IGO）。<br>
+    流程耗时部分为结构化仿真。所有统计口径可由随机种子完整复现。<br>
+    源码：<a href="https://github.com/TomStones26/procurement-ab-sandbox">github.com/TomStones26/procurement-ab-sandbox</a>
+  </footer>
+
+</div>
+</body>
+</html>

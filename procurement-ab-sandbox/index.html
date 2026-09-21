@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>采购流程 A/B 实验沙盒 · PR 审批分级授权</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">
+      <div class="mark">⇄</div>
+      <div>采购 A/B 实验沙盒
+        <small>PROCUREMENT EXPERIMENTATION SANDBOX · PR 审批分级授权</small>
+      </div>
+    </div>
+    <div class="meta">
+      <span class="pill gray" id="pillRows">—</span>
+      <span class="pill" id="pillSrc">真实数据锚定</span>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tabs-inner" id="tabs">
+    <button class="tab active" data-t="overview"><span class="num">1</span>业务与聚焦点</button>
+    <button class="tab" data-t="data"><span class="num">2</span>数据源与基线</button>
+    <button class="tab" data-t="design"><span class="num">3</span>实验设计</button>
+    <button class="tab" data-t="run"><span class="num">4</span>沙盒运行</button>
+    <button class="tab" data-t="diag"><span class="num">5</span>统计诊断</button>
+    <button class="tab" data-t="decision"><span class="num">6</span>决策与规范</button>
+  </div>
+</div>
+
+<main>
+
+<!-- ==================== 1. 业务与聚焦点 ==================== -->
+<section class="panel active" id="p-overview">
+  <div class="card">
+    <h1>把「采购申请审批」这一个环节，做成一个可被证伪的实验</h1>
+    <p class="muted" style="margin-bottom:14px">
+      这不是一个讲供应链全景的看板。整套沙盒只回答一个问题：
+      <b>把低值、低风险采购申请的串行人工审批，换成规则引擎自动放行 + 事后抽检，
+      到底能不能真正缩短采购周期，代价是什么。</b>
+    </p>
+
+    <h4>采购流程链路（本实验只动其中一个节点）</h4>
+    <div class="flow">
+      <div class="node"><div class="t">需求提出</div><div class="s">部门提需求</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="t">创建 PR</div><div class="s">采购申请单 · t₀</div></div>
+      <div class="arrow">→</div>
+      <div class="node focus"><div class="t">PR 审批 ✦</div><div class="s">本实验唯一干预点</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="t">询价 / 定点</div><div class="s">比价、供应商确认</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="t">PO 签发</div><div class="s">下单 · t₁</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="t">收货 GRN</div><div class="s">入库验收</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="t">三单匹配</div><div class="s">PO/GRN/发票</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="t">付款</div><div class="s">结算</div></div>
+    </div>
+
+    <div class="four">
+      <div class="row"><div class="tag">【一句话】</div><div class="txt">
+        采购申请（PR）卡在审批上的时间，比后面所有环节加起来都长；把「低值低风险」这一类的审批拿掉，周期能砍掉一大截。</div></div>
+      <div class="row"><div class="tag">【为什么】</div><div class="txt">
+        审批是<b>串行人工队列</b>：一级不点，二级永远不动。而审批人对低值申请几乎没有边际信息优势——金额小、品类标准、供应商在合格名录里，
+        人工审批实际上只能确认「这笔单子看起来正常」。真正的风险控制手段是<b>规则校验 + 事后审计</b>，不是逐单签字。
+        这就像高速公路的收费站：ETC 车道不是不收费，是把"停车交费"换成了"先通过、后结算、异常再拦"，而且<b>拦的对象从 100% 变成抽检的 10%</b>，
+        必须靠"事后追责能力"补回来。</div></div>
+      <div class="row"><div class="tag">【本例证据】</div><div class="txt">
+        沙盒基线（金额分布由真实采购数据锚定）：PR → PO 中位周期 <b>约 46 小时</b>（接近两个工作日），
+        其中两级人工审批按中位数计占约 <b>45%</b>；但它在<b>长尾上占的份额更大</b> ——
+        遭遇积压或驳回返工时，审批会反复串行叠加，把 P90 推到 <b>100 小时以上</b>（四天多）。
+        低值低风险 PR 占全部申请量的约 <b>三分之一（33%）</b>（由真实金额分布与品类风险分级推算）。</div></div>
+      <div class="row"><div class="tag">【怎么改】</div><div class="txt">
+        实验组改为：<b>金额 ≤ 阈值 且 品类风险=低</b> 的 PR，由规则引擎做预算科目余额、合格供应商名录、重复采购三项校验，
+        约 1 小时内自动放行；其余 PR 维持原两级审批。同时对该通道增加<b>事后抽检</b>兜底。对照组完全不变。</div></div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>一页速查表</h3>
+      <p class="sub">问题 → 后果 → 对策，给不看细节的决策方。</p>
+      <div class="scroll">
+      <table>
+        <thead><tr><th>问题</th><th>后果</th><th>对策</th></tr></thead>
+        <tbody>
+          <tr><td>低值 PR 排队等两级签字</td><td>典型周期 45h+、P90 近百小时，直接拖累生产备料与库存周转</td><td>规则引擎自动放行，跳过两级串行审批</td></tr>
+          <tr><td>审批量随申请量线性增长</td><td>采购经理被低价值工作占满，无暇管战略寻源</td><td>把人力从约 1/3 的单量里释放出来</td></tr>
+          <tr><td>自动放行可能"放水"</td><td>买贵、拆单规避、指定供应商</td><td>全量留痕 + 事后自动比对；抽检只作补充发现手段</td></tr>
+          <tr><td>改进效果说不清</td><td>上线后没人能证明它有用，也没人能证明它有害</td><td>随机对照实验，事前冻结 MDE 与决策规则</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>实验假设与决策规则（事前冻结）</h3>
+      <p class="sub">先写死判据，再看数据 —— 这是整套流程里最重要的一条纪律。</p>
+      <div class="note"><b>H1（主假设）</b>：分级授权可显著降低 PR→PO 周期。<br>
+        判据：对数尺度几何均值比 &lt; 1 且 p &lt; 0.05，95% CI 上限 &lt; 1。</div>
+      <div class="note"><b>H2（效率假设）</b>：目标人群 48 小时内完成率显著提升。<br>
+        判据：绝对提升 &gt; 10pp 且 p &lt; 0.05。</div>
+      <div class="note warn"><b>H3（护栏假设）</b>：不得以牺牲管控换取速度。<br>
+        判据：审计异常率上升 &lt; 1.0pp（非劣界），价格偏差上升 &lt; 1.5pp。任一越界 → 不上线。</div>
+      <div class="note ok"><b>决策规则（三选一，不允许事后挑选口径）</b><br>
+        ① H1+H2 显著 且 护栏未越界 → <b>有条件放量</b>（限金额阈值 + 强制抽检）<br>
+        ② H1 显著 但护栏越界 → <b>先补管控再放量</b><br>
+        ③ H1 不显著 → <b>不上线</b>，转做流程节点拆解诊断</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>为什么这件事值得做实验，而不是拍脑袋上线</h3>
+    <div class="grid g3">
+      <div>
+        <h4>① 有明确的可比反事实</h4>
+        <p class="tiny muted">同一批采购员、同一套系统、同一时间段，随机让一部分 PR 走新通道。除了策略本身，其他条件都一致 —— 这是因果推断的最低门槛。</p>
+      </div>
+      <div>
+        <h4>② 效应量小、噪声大</h4>
+        <p class="tiny muted">周期是重尾分布，个别大额 PR 的驳回返工能拉高整周均值。不上随机化、不做方差缩减，凭"上线前后对比"根本分不清是策略有效还是这周运气好。</p>
+      </div>
+      <div>
+        <h4>③ 有真实的下行风险</h4>
+        <p class="tiny muted">放宽审批必然抬高"放水"概率。实验的价值不只是证明收益，更是<b>把代价量出来</b>——审计异常率涨了多少、抽检能不能兜住。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 2. 数据源与基线 ==================== -->
+<section class="panel" id="p-data">
+  <div class="card">
+    <h3>数据从哪来</h3>
+    <p class="sub">两份公开的真实采购数据，通过官方 API 实时抓取，用于锚定沙盒的分布形态。</p>
+    <div class="grid g2">
+      <div>
+        <div class="note"><b>USASpending.gov</b> · 美国联邦采购合同授予数据<br>
+          <span class="tiny">API：<code>api.usaspending.gov/api/v2/search/spending_by_award/</code><br>
+          抓取方式：按金额排名<b>等距跳跃抽样</b>（避免只取头部大额合同导致的分布截断）<br>
+          字段：合同金额、起止日期、采购机构、供应商、合同类型、竞争方式<br>
+          许可：公有领域（美国政府开放数据）</span></div>
+        <div class="note"><b>World Bank Procurement Notices</b> · 世界银行采购公告<br>
+          <span class="tiny">API：<code>search.worldbank.org/api/v2/procnotices</code><br>
+          用途：锚定采购方式构成与招标阶段时间跨度<br>
+          许可：CC BY 3.0 IGO</span></div>
+      </div>
+      <div>
+        <h4>真实数据用在哪、没用在哪</h4>
+        <p class="tiny">这两份数据都是<b>政府/多边机构的合同授予记录</b>，不能直接当作某家企业的 PR 流水：
+          <b>没有 PR 级审批时间戳</b>，量级也完全不同（联邦合同多在千万美元级）。</p>
+        <p class="tiny">所以本沙盒的做法是：<b>用真实数据锚定"形状"，用企业场景重定"尺度"</b>——
+          金额的对数正态离散度、品类构成、供应商集中度、合同期限分布、竞争方式构成取自实测；
+          金额中位数按中型制造企业采购量级重设，且该映射在下方映射表中逐条标出。</p>
+        <div class="note warn">没有公开数据集包含"PR 审批各节点耗时"，因此流程耗时部分由带真实结构特征
+          （重尾、周末低谷、积压放大、按风险等级分化）的生成过程仿真，<b>不是实测</b>。这一点必须说清楚，不能含糊。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>真实合同金额分布（对数坐标）</h3>
+      <p class="sub" id="amtSub">—</p>
+      <div id="chartAmt"></div>
+    </div>
+    <div class="card">
+      <h3>分布形态对照：它到底服不服从对数正态</h3>
+      <p class="sub">很多采购分析会默认"金额服从对数正态"然后直接套均值方差。这里用真实数据检验一下这个假设。</p>
+      <div id="tblFit"></div>
+      <div id="chartQQ"></div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>供应商集中度（按合同金额排名）</h3>
+      <p class="sub">金额高度集中在少数供应商手里 —— 这决定了"合格供应商名录"能不能成为有效的风险闸门。</p>
+      <div id="chartTop"></div>
+      <div id="topStat"></div>
+    </div>
+    <div class="card">
+      <h3>采购品类构成（PSC 产品服务代码）</h3>
+      <p class="sub">真实采购的钱花在了哪些品类上。沙盒里的 6 个品类就是在这个构成基础上做的风险分级简化。</p>
+      <div id="chartPsc"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>真实数据 → 沙盒参数映射表</h3>
+    <p class="sub">每一条沙盒参数都能追到来源。标「实测」的来自 API 数据，标「场景设定」的是为对齐企业采购量级而做的重设。</p>
+    <div class="scroll"><div id="tblMap"></div></div>
+  </div>
+</section>
+
+<!-- ==================== 3. 实验设计 ==================== -->
+<section class="panel" id="p-design">
+  <div class="card">
+    <h3>设计要素一览</h3>
+    <div class="grid g3" id="designFacts"></div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>指标树：一个主指标，两个次指标，三个护栏</h3>
+      <p class="sub">主指标只有一个。指标一多，就等于没有判据。</p>
+      <div class="scroll">
+      <table>
+        <thead><tr><th>层级</th><th>指标</th><th>定义</th><th>判据</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill">主</span></td><td>PR→PO 周期</td><td>PR 创建时刻 → PO 签发时刻（小时）</td><td>几何均值比 &lt; 1，p&lt;0.05，CI 上限 &lt; 1</td></tr>
+          <tr><td rowspan="2"><span class="pill gray">次</span></td><td>48h 完成率</td><td>周期 ≤ 48h 的 PR 占比</td><td>绝对提升 &gt; 10pp</td></tr>
+          <tr><td>审批驳回率</td><td>被人工驳回的 PR 占比</td><td>不上升（诊断用）</td></tr>
+          <tr><td rowspan="3"><span class="pill warn">护栏</span></td><td>事后审计异常率</td><td>拆单、超预算、指定供应商的流出比例</td><td>上升 &lt; 1.0pp（非劣）</td></tr>
+          <tr><td>采购价格偏差</td><td>成交价相对品类基准价的偏离</td><td>上升 &lt; 1.5pp</td></tr>
+          <tr><td>紧急/围标采购占比</td><td>绕过正常流程的采购占比</td><td>不显著恶化</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="note warn"><b>为什么主指标用几何均值而不是算术均值。</b>
+        采购周期是典型重尾分布（真实合同数据确认：对数标准差 0.9 量级，偏度极高）。
+        算术均值会被少数超长周期 PR 带跑，中位数又对尾部不敏感。
+        几何均值 = 对数尺度上的均值，既抗尾部拉拽，又能直接解释成"典型周期的比值"。这是采购/履约类指标的行业惯例口径。</div>
+    </div>
+
+    <div class="card">
+      <h3>随机化与分流方案</h3>
+      <p class="sub">随机化单元的选择，决定了这个实验能不能被正确解释。</p>
+      <dl class="dl">
+        <dt>随机化单元</dt><dd>采购申请（PR）单条记录</dd>
+        <dt>分流时机</dt><dd>PR 提交时即时分配，策略贯穿该 PR 全生命周期</dd>
+        <dt>分层变量</dt><dd>品类（6）× 金额档（3）= 18 层，层内 1:1 随机</dd>
+        <dt>分析口径</dt><dd>ITT（意向治疗）：按初始分配组分析，不按实际是否走了自动通道</dd>
+      </dl>
+      <div class="note"><b>为什么按 PR 而不是按"采购员/部门"随机化？</b>
+        按人随机会出现 <b>溢出效应</b>：同一个采购员同时处理新旧两套流程，会把新流程的习惯带到对照组，稀释效应估计。
+        按 PR 随机则要求系统必须在单号层面无差别执行策略，且不存在跨 PR 的依赖 —— 本例满足（审批是逐单的）。<br>
+        <b>但代价是</b>：同一采购员的对照组 PR 仍会被"他这次不用签字了"这件事影响，属于轻度污染。诊断页会给出按采购员聚类的稳健标准误作为补充。</div>
+      <div class="note warn"><b>ITT 与 CACE。</b>只有约 37% 的 PR 会被策略实际覆盖（低值 + 低风险 + 规则校验通过）。
+        全体口径（ITT）看到的是<b>被稀释后的效应</b>，比"被覆盖人群上的真实效应"小得多。
+        只报 ITT 会低估价值，只报覆盖人群又会高估推广收益 —— 两个口径都要报，并在决策页写明适用范围。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>样本量与实验周期规划器</h3>
+    <p class="sub">先算清楚"要多少样本才能看见想要的效果"，再开实验。这是避免"跑了两周发现不显著"的唯一办法。</p>
+    <div class="grid g2">
+      <div>
+        <div class="ctrl">
+          <label>目标检测的相对效应 MDE <span class="val" id="v-mde">12%</span></label>
+          <input type="range" id="s-mde" min="2" max="30" step="1" value="12">
+          <div class="hint">主指标至少要改善多少，才算"值得上线"。</div>
+        </div>
+        <div class="ctrl">
+          <label>基线几何均值周期 <span class="val" id="v-base">33.0 h</span></label>
+          <input type="range" id="s-base" min="15" max="70" step="1" value="33">
+          <div class="hint">由沙盒基线实测得出，可调。</div>
+        </div>
+        <div class="ctrl">
+          <label>对数尺度标准差 σ <span class="val" id="v-sd">0.78</span></label>
+          <input type="range" id="s-sd" min="0.3" max="1.4" step="0.02" value="0.78">
+          <div class="hint">重尾程度。越大越难测出效应。</div>
+        </div>
+        <div class="ctrl">
+          <label>日均 PR 量 <span class="val" id="v-vol">380</span></label>
+          <input type="range" id="s-vol" min="50" max="1200" step="10" value="380">
+        </div>
+        <div class="grid g2">
+          <div class="ctrl">
+            <label>显著性水平 α <span class="val" id="v-alpha">0.05</span></label>
+            <input type="range" id="s-alpha" min="0.01" max="0.10" step="0.01" value="0.05">
+          </div>
+          <div class="ctrl">
+            <label>功效 1-β <span class="val" id="v-power">0.80</span></label>
+            <input type="range" id="s-power" min="0.6" max="0.95" step="0.05" value="0.8">
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="grid g3" id="planKpi"></div>
+        <div id="chartPower"></div>
+        <div class="note" id="planNote"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>一个必须提前知道的坏消息：护栏指标几乎测不出来</h3>
+    <p class="sub">同一套流量，主指标和护栏指标所需的样本量差了几十倍。这决定了护栏该用实验证明，还是只能用监控 + 熔断来守。</p>
+    <div class="grid g2">
+      <div>
+        <div class="ctrl">
+          <label>主指标：已实测的效应量 <span class="val" id="v-gmde">30%</span></label>
+          <input type="range" id="s-gmde" min="5" max="40" step="1" value="30">
+          <div class="hint">沙盒跑出来的实际效应约 30%。这里用"已确知效应"去对比，才看得清两个指标要的样本量差距。</div>
+        </div>
+        <div class="ctrl">
+          <label>护栏：基线审计异常率 <span class="val" id="v-gbase">1.20%</span></label>
+          <input type="range" id="s-gbase" min="0.2" max="5" step="0.05" value="1.2">
+        </div>
+        <div class="ctrl">
+          <label>护栏：不愿漏掉的绝对上升 <span class="val" id="v-gdelta">0.30 pp</span></label>
+          <input type="range" id="s-gdelta" min="0.05" max="1.5" step="0.05" value="0.3">
+          <div class="hint">即"异常率从 1.20% 涨到 1.50%"这种量级的变化。</div>
+        </div>
+        <div class="ctrl">
+          <label>日均 PR 量 <span class="val" id="v-gvol">380</span></label>
+          <input type="range" id="s-gvol" min="50" max="1200" step="10" value="380">
+        </div>
+      </div>
+      <div>
+        <div class="grid g2" id="guardPlanKpi"></div>
+        <div id="chartGuardPlan"></div>
+        <div class="note warn" id="guardPlanNote"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>A/A 验证：先证明你的实验系统"不会说谎"</h3>
+      <p class="sub">两组完全相同策略，重复 300 次，看假阳性率是否接近 α。跑不到 5% 附近，说明分流或分析管线有问题。</p>
+      <div class="btnrow"><button class="btn primary" id="btnAA">运行 A/A 验证（300 次）</button>
+        <span class="tiny muted" id="aaStatus"></span></div>
+      <div id="aaResult"></div>
+    </div>
+    <div class="card">
+      <h3>事前检查清单</h3>
+      <p class="sub">开实验之前必须全部打勾，缺一项就别跑。</p>
+      <div id="preCheck"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 4. 沙盒运行 ==================== -->
+<section class="panel" id="p-run">
+  <div class="grid g2" style="grid-template-columns:340px 1fr">
+    <div class="card">
+      <h3>实验参数</h3>
+      <p class="sub">改参数即重跑，全部结果实时重算。</p>
+
+      <h4 style="color:var(--brand)">策略参数</h4>
+      <div class="ctrl">
+        <label>自动放行金额阈值 <span class="val" id="v-thr">¥50,000</span></label>
+        <input type="range" id="s-thr" min="5000" max="1000000" step="5000" value="50000">
+        <div class="hint">阈值越高，覆盖的 PR 越多，速度收益越大，管控风险也越大 —— 拉到高位可以直接把护栏指标打穿。</div>
+      </div>
+      <div class="ctrl">
+        <label>自动放行耗时 <span class="val" id="v-delay">1.0 h</span></label>
+        <input type="range" id="s-delay" min="0.1" max="8" step="0.1" value="1">
+        <div class="hint">规则引擎校验 + 出单的系统耗时。</div>
+      </div>
+      <div class="ctrl">
+        <label>规则校验一次通过率 <span class="val" id="v-pass">93%</span></label>
+        <input type="range" id="s-pass" min="0.70" max="0.99" step="0.01" value="0.93">
+        <div class="hint">校验不通过则落到人工通道，收益被吃掉。</div>
+      </div>
+      <div class="ctrl">
+        <label>事后抽检比例 <span class="val" id="v-spot">10%</span></label>
+        <input type="range" id="s-spot" min="0" max="0.4" step="0.01" value="0.10">
+        <div class="hint">护栏指标的关键旋钮：抽检能拦住大部分审计异常。</div>
+      </div>
+
+      <h4 style="color:var(--brand);margin-top:18px">流量与周期</h4>
+      <div class="ctrl">
+        <label>日均 PR 量 <span class="val" id="v-vol2">380</span></label>
+        <input type="range" id="s-vol2" min="50" max="1200" step="10" value="380">
+      </div>
+      <div class="ctrl">
+        <label>实验天数 <span class="val" id="v-days">28</span></label>
+        <input type="range" id="s-days" min="7" max="56" step="1" value="28">
+      </div>
+      <div class="ctrl">
+        <label>随机种子 <span class="val" id="v-seed">20260</span></label>
+        <input type="range" id="s-seed" min="1" max="99999" step="1" value="20260">
+        <div class="hint">同一种子结果完全可复现 —— 实验结论必须可复算。换种子可检验结论稳健性。</div>
+      </div>
+
+      <h4 style="color:var(--danger);margin-top:18px">故障注入（教学用）</h4>
+      <div class="ctrl">
+        <label>实验组流量偏移 <span class="val" id="v-bias">0%</span></label>
+        <input type="range" id="s-bias" min="-0.03" max="0.03" step="0.005" value="0">
+        <div class="hint">故意破坏分流的 1:1 比例，看 SRM 检验能否把它抓出来。</div>
+      </div>
+      <div class="ctrl">
+        <label>运行速度 <span class="val" id="v-speed">×1</span></label>
+        <input type="range" id="s-speed" min="1" max="8" step="1" value="1">
+      </div>
+
+      <div class="btnrow" style="margin-top:16px">
+        <button class="btn primary" id="btnRun">▶ 运行实验</button>
+        <button class="btn" id="btnInstant">瞬时完成</button>
+        <button class="btn" id="btnReset">重置</button>
+      </div>
+      <div class="pbar"><i id="runBar"></i></div>
+      <div class="tiny muted" style="margin-top:6px" id="runStatus">未运行</div>
+    </div>
+
+    <div>
+      <div class="grid g4" id="runKpi"></div>
+      <div class="card">
+        <h3>主指标：PR→PO 周期的组间差异</h3>
+        <p class="sub" id="primarySub">—</p>
+        <div id="chartEffect"></div>
+      </div>
+      <div class="card">
+        <h3>序贯检验：随天数累积的 z 统计量</h3>
+        <p class="sub">以 O'Brien-Fleming 边界做 alpha 消耗。z 越过边界即可提前停止，避免"多看几次就多几次假阳性"。</p>
+        <div id="chartSeq"></div>
+        <div class="legend">
+          <span><i style="background:var(--brand)"></i>实测 z 值</span>
+          <span><i style="background:var(--accent)"></i>OBF 停止边界</span>
+          <span><i style="background:var(--ink-3)"></i>最终显著线 ±1.96</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>周期分布对照</h3>
+      <p class="sub">两组 PR→PO 周期的完整分布。可以看到实验组在 10 小时附近形成一个明显的"第二峰"（自动放行通道）。</p>
+      <div id="chartHist"></div>
+    </div>
+    <div class="card">
+      <h3>分组样本量累积（SRM 监控）</h3>
+      <p class="sub">分流比例是实验的生命线。比例失配通常意味着分流代码有 bug，此时任何显著性结论都不可信。</p>
+      <div id="chartSrm"></div>
+      <div id="srmBox"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 5. 统计诊断 ==================== -->
+<section class="panel" id="p-diag">
+  <div class="card">
+    <h3>主指标多方法对照</h3>
+    <p class="sub">同一个效应，用四种方法算，看结论是否一致。口径之间打架时，先查数据再下结论。</p>
+    <div class="scroll"><div id="tblMethods"></div></div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>CUPED 方差缩减</h3>
+      <p class="sub">用"该品类×金额档的历史平均审批时长"作为协变量，在不增加样本的前提下压缩方差。</p>
+      <div id="cupedBox"></div>
+      <div id="chartCuped"></div>
+    </div>
+    <div class="card">
+      <h3>分布诊断：为什么必须在对数尺度上做检验</h3>
+      <p class="sub">如果原始尺度上的偏度与峰度爆表，t 检验的正态假设就站不住。</p>
+      <div id="distBox"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>异质性分析（CATE）：效应集中在谁身上</h3>
+    <p class="sub">全样本平均效应会掩盖结构性差异。森林图显示各子群的对数尺度效应与 95% CI，右侧为"策略覆盖率"。</p>
+    <div id="chartForest"></div>
+  </div>
+
+  <div class="card">
+    <h3>护栏指标与非劣检验</h3>
+    <p class="sub">速度提升如果以管控失守为代价，这个实验就是失败的。下面每一项都必须是"没有显著恶化"。</p>
+    <div class="scroll"><div id="tblGuard"></div></div>
+  </div>
+
+  <div class="card">
+    <h3>多重比较校正</h3>
+    <p class="sub">次指标与护栏一起检验了多次，不做校正就等于偷偷放水。</p>
+    <div class="scroll"><div id="tblBH"></div></div>
+  </div>
+</section>
+
+<!-- ==================== 6. 决策 ==================== -->
+<section class="panel" id="p-decision">
+  <div id="decisionBox"></div>
+
+  <div class="card">
+    <h3>A/B 实验规范清单</h3>
+    <p class="sub">可直接拿去当团队 SOP。勾选状态会随沙盒结果自动标注。</p>
+    <div id="checklist"></div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>这个实验的已知局限</h3>
+      <div id="limits"></div>
+    </div>
+    <div class="card">
+      <h3>如果要真正落地，下一步做什么</h3>
+      <div id="nextSteps"></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  采购 A/B 实验沙盒 · 数据源：USASpending.gov API（公有领域）、World Bank Procurement Notices（CC BY 3.0 IGO）·
+  流程耗时部分为结构化仿真，非实测 · 所有统计口径可由随机种子完整复现
+</footer>
+
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
