@@ -2,8 +2,8 @@
 
 > 本文档记录本项目的 GitHub 接入方式、**当前卡在哪一步**、以及后续每次更新怎么做。
 >
-> **先说结论：本地仓库已建好、首次提交已完成，只差最后一步"推送"。**
-> 推送失败的原因不在代码、不在网络、也不在 GitHub 账号 —— 是**本机的 Git 凭据助手在无窗口环境下拿不到凭据**。修法在第 4 节，一条命令。
+> **当前结论（2026-09-22 更新）：凭据问题已解决，现在只差一个"空仓库"。**
+> 去网页手动建一个**空的** `procurement-ab-sandbox` 仓库，再重跑 `git push` 即可。详见第 4 节。
 
 ---
 
@@ -12,12 +12,20 @@
 | 项目 | 状态 |
 |---|---|
 | 本地仓库 | ✅ 已初始化（分支 `main`） |
-| 首次提交 | ✅ 已完成 —— `19df1e7`，21 个文件 / 4,600 行 |
+| 首次提交 | ✅ 已完成 —— 两次提交（`19df1e7` init / `9646e42` docs） |
 | 工作区 | ✅ 干净（无未提交改动） |
 | 远程地址 | ✅ 已配置 → `https://github.com/TomStones26/procurement-ab-sandbox.git` |
-| **推送到 GitHub** | ❌ **未完成** —— 卡在凭据助手，见第 4 节 |
-| 远程仓库 | ❌ 尚未创建（需先推送成功，或手动建） |
+| Git 凭据 | ✅ **已通** —— `git push` 秒回错误，不再卡死 |
+| **远程仓库** | ❌ **尚未创建** —— 需在网页手动建，见第 4 节 |
 | GitHub Pages | ⬜ 待推送后开启 |
+
+### 一句话说清当前障碍
+
+`git push` **不会自动创建仓库**，必须先有一个空的远程仓库。
+而且本机当前用的是 GitHub Desktop 签发的 OAuth token（`gho_` 开头），**没有建仓库的权限** ——
+所以只能你在网页上手动创建一次。
+
+> 参考：你之前的 `credit-risk-modeling` 能推成功，正是因为那个仓库是**先在网页建好的**。
 
 ---
 
@@ -61,55 +69,74 @@ procurement-ab-sandbox/styles.css
 
 ---
 
-## 三、推送失败的真实原因
+## 三、两道障碍的完整诊断
 
-### 现象
+推送失败前后有**两个不同的原因**，别混在一起看。
 
-`git push` 会**永久挂起**，不报错也不超时：
+### 障碍一（已解决）：凭据助手在无窗口环境卡死
 
-```
-$ git push -u origin main
-（卡住，6 分钟无任何输出）
-```
+**现象**：`git push` 永久挂起，不报错也不超时，6 分钟无任何输出。
 
-### 排查过程与排除项
-
-| 怀疑对象 | 结论 |
-|---|---|
-| 网络不通 | ❌ 排除 —— `curl https://github.com` 返回 200，约 2.6 秒 |
-| 账号不对 | ❌ 排除 —— `TomStones26` 账号存在，已有 2 个仓库 |
-| 仓库名冲突 | ❌ 排除 —— 远程仓库不存在（API 返回 404） |
-| 代码有问题 | ❌ 排除 —— 本地提交干净，`git status` 无异常 |
-| 缺少凭据 | ❌ 排除 —— Windows 凭据库里有 `git:https://github.com`，用户 `TomStones26` |
-
-### 真正的原因
-
-问题出在这台机器 Git 的**系统级凭据助手配置**：
+**原因**：这台机器 Git 的**系统级凭据助手**配置成了需要弹窗交互的组件。
 
 ```
 $ git config --system --get credential.helper
-helper-selector        ← 指向 GitHub Desktop 的凭据选择器
+helper-selector        ← GitHub Desktop 的凭据选择器
 ```
 
-`git-credential-helper-selector` 是一个**需要弹窗交互**的组件（选择用哪个账号/方式登录）。在没有可交互桌面会话的环境里（比如自动化脚本、CI、后台任务），它**弹不出窗口，也拿不到结果，就无限期挂住**。
+`git-credential-helper-selector` 需要弹窗让你选登录方式。在没有可交互桌面会话的环境里（自动化脚本、CI、后台任务），它**弹不出窗口也拿不到结果，就无限期挂住**。
 
 实测三条证据：
-
 1. `git credential fill` 挂起 —— 20 秒无响应
-2. 强制换成 `store` / `wincred` 助手，**同样挂起** —— 说明系统级配置的干预比预期更强，命令行覆盖不生效
-3. 在**之前成功推送过**的 `风控项目` 目录下重试，**同样挂起** —— 证明这是机器环境问题，**不是本项目的问题**
+2. 强制换成 `store` / `wincred` 助手，**同样挂起**
+3. 在**之前成功推送过**的 `风控项目` 目录下重试，**同样挂起** → 机器环境问题，非本项目问题
 
-> 换句话说：之前那两个仓库能推上去，是因为你在**有桌面的环境里手动执行**的。现在由助手在后台执行，就卡住了。
+**怎么好的**：你在**有桌面的 PowerShell** 里手动执行了一次，交互窗口正常弹出、完成授权。之后 `git push` 秒回错误，不再卡死。
+
+→ **这条经验要记住：首次授权必须在有桌面的会话里做，不能用后台/自动化方式。**
+
+### 障碍二（当前卡点）：远程仓库不存在，且当前凭据无权创建
+
+**现象**：
+
+```
+$ git push -u origin main
+remote: Repository not found.
+fatal: repository 'https://github.com/TomStones26/procurement-ab-sandbox.git/' not found
+```
+
+**原因有两层：**
+
+**第一层 —— `git push` 不会自动创建仓库。**
+它只能推到**已存在**的仓库。`Repository not found` 是字面意思：GitHub 上确实还没有这个仓库。
+（核实结果：你账号下当时只有 `credit-risk-modeling` 和 `search-trend-insight` 两个仓库。）
+
+**第二层 —— 当前凭据没有"建仓库"的权限。**
+本机凭据库里用的是 GitHub Desktop 签发的 OAuth token（`gho_` 开头）。这种 token 的权限范围**不包含创建仓库**，所以能认证、能读写已有仓库，但建不了新仓库。
+
+> 这正好解释了为什么 `credit-risk-modeling` 当初能推成功 —— 因为那个仓库是**先在网页上手动建好的**。
 
 ---
 
-## 四、怎么修（推荐路径）
+## 四、怎么修（就一步：手动建一个空仓库）
 
-**最省事的办法：你自己在 PowerShell 里跑一次推送。**
+### 第 1 步：在 GitHub 网页建空仓库
 
-因为是你在有桌面的会话里操作，凭据助手能正常弹窗，一次性授权后永久记住。
+1. 打开 <https://github.com/new>
+2. **Repository name** 填：`procurement-ab-sandbox`
+   ⚠️ 必须完全一致，否则要改远程地址
+3. **Description** 填：
+   `供应链采购流程 A/B 实验沙盒：PR 审批分级授权（低值低风险 PR 规则引擎自动放行 + 事后审计），含真实数据采集管道与完整统计诊断`
+4. 选 **Public**（免费账号的私有仓库不能发布 Pages，想要在线站点必须 Public）
+5. ⚠️ **三个勾一个都不要勾** —— 这是最容易出错的一步：
+   - ☐ Add a README file
+   - ☐ Add .gitignore
+   - ☐ Choose a license
 
-打开 **PowerShell**（开始菜单搜 "PowerShell"），**逐行**执行：
+   **原因**：本地已经有这些文件了。远程再生成一份，两边历史不一致，推送会被直接拒绝（`rejected - fetch first`）。
+6. 点 **Create repository**
+
+### 第 2 步：重跑推送
 
 ```powershell
 cd "C:\Users\ynwas\WorkBuddy\2026-09-21-16-09-54"
@@ -117,23 +144,7 @@ cd "C:\Users\ynwas\WorkBuddy\2026-09-21-16-09-54"
 git push -u origin main
 ```
 
-远程仓库 `procurement-ab-sandbox` 会在**第一次推送时自动创建**（GitHub 的默认行为，前提是账号有建仓库权限）。
-
-### 会看到什么
-
-**情况 A（正常）**：弹出 **GitHub Desktop / Git Credential Manager** 窗口 → 点 **Sign in with your browser** → 浏览器里授权一下。之后永久记住。
-
-**情况 B**：命令行提示 `Username:` / `Password:`。注意 —— **GitHub 从 2021 年起不接受账号密码**，这里要填 **Personal Access Token**：
-
-1. GitHub 右上角头像 → **Settings**
-2. 左栏拉到底 → **Developer settings**
-3. **Personal access tokens** → **Tokens (classic)**
-4. **Generate new token** → **Generate new token (classic)**
-5. Note 填 `local-push`，Expiration 选 90 days，权限勾 **`repo`**（第一个大项）
-6. 点 **Generate token** → **立刻复制那串字符**（只显示这一次）
-7. 回 PowerShell：`Username:` 填 `TomStones26`；`Password:` **粘贴那串 token**（输入时不显示字符，属正常，粘贴完直接回车）
-
-### 成功的标志
+**成功的标志**：
 
 ```
 Enumerating objects: 24, done.
@@ -145,37 +156,41 @@ branch 'main' set up to track 'origin/main'.
 
 看到这几行就成功了。刷新 GitHub 页面能看到 21 个文件。
 
-### 如果情况 A 窗口没弹出来
+### 万一还是失败
 
-说明系统级助手配置在这台机器上确实不通。改用**明确指定助手**的方式：
-
-```powershell
-cd "C:\Users\ynwas\WorkBuddy\2026-09-21-16-09-54"
-
-git -c credential.helper=manager push -u origin main
-```
-
-还是不行的话，把系统级配置清掉（需要**管理员身份**的 PowerShell）：
+**报 `rejected - fetch first` / `failed to push some refs`**
+说明建仓库时不小心勾了 README / .gitignore（远程多了一个提交）。确认远程内容可丢弃后强制覆盖：
 
 ```powershell
-git config --system --unset credential.helper
-git config --global credential.helper manager
+git push -u origin main --force
 ```
 
-然后再跑一次 `git push -u origin main`。
+⚠️ `--force` 会覆盖远程内容，**只在确认远程是刚建的空仓库时**用。
 
-### 备选路径：手动建仓库
+**报 `Repository not found` 但仓库明明建好了**
+检查仓库名有没有拼错（大小写不敏感，但连字符别漏）：
 
-如果自动创建失败（权限或策略限制），就去 GitHub 手动建一个**空**仓库：
+```powershell
+git remote -v
+```
 
-1. 右上角 **`+`** → **New repository**
-2. **Repository name** 填：`procurement-ab-sandbox`（必须完全一致，否则要改远程地址）
-3. **Description** 填：
-   `供应链采购流程 A/B 实验沙盒：PR 审批分级授权（低值低风险 PR 规则引擎自动放行 + 事后审计），含真实数据采集管道与完整统计诊断`
-4. 选 **Public**（免费账号的私有仓库不能发布 Pages，想要在线站点必须 Public）
-5. ⚠️ **三个勾一个都不要勾**（Add a README / Add .gitignore / Choose a license）
-   —— 本地已经有了，远程再生成一份，推送时会"打架"报错
-6. 点 **Create repository**，然后回到第 4 节跑推送命令
+如果地址不对，改掉再推：
+
+```powershell
+git remote set-url origin https://github.com/TomStones26/procurement-ab-sandbox.git
+git push -u origin main
+```
+
+**授权又卡住了**
+说明凭据需要重新验证。到网页重新签一次授权，或改用 Personal Access Token：
+
+1. GitHub 右上角头像 → **Settings** → 左栏拉到底 → **Developer settings**
+2. **Personal access tokens** → **Tokens (classic)** → **Generate new token (classic)**
+3. Note 填 `local-push`，Expiration 选 90 days，权限**勾 `repo`**（第一个大项）
+4. **Generate token** → **立刻复制那串字符**（只显示这一次）
+5. 回 PowerShell，弹出提示时 `Username:` 填 `TomStones26`，`Password:` **粘贴 token**（输入时不显示字符，属正常）
+
+> **想一劳永逸**：用带 `repo` 权限的 classic token，就不依赖 GitHub Desktop 的 OAuth 了，建仓库、推送都能做，不会再遇到这次的权限问题。
 
 ---
 
@@ -215,10 +230,11 @@ git push
 
 ### 也可以直接让助手帮你做
 
-改完文件后跟我说一句"同步到 GitHub"即可。**首次推送成功后**，凭据会被缓存，后续助手就能直接推了（挂起问题的前提是"第一次授权还没完成"）。
+改完文件后跟我说一句"同步到 GitHub"即可。**首次推送成功后**，凭据已缓存，助手就能直接推了。
 
 ### 什么时候必须你手动做
 
+- **首次创建远程仓库** —— 当前凭据没有建仓库权限，只能网页操作（或改用带 `repo` 权限的 token）
 - **改了 `.gitignore` 想加例外** —— 需要确认新文件确实不含隐私数据
 - **想改仓库可见性（Public/Private）** —— 只能进 Settings 操作
 - **凭据过期或被撤销** —— 重新授权需要你在桌面环境点一下
@@ -270,14 +286,23 @@ Settings → 最下方 **Danger Zone** → **Change repository visibility**。
 **Q5：想彻底删掉仓库**
 Settings → 最下方 **Danger Zone** → **Delete this repository**（需按提示输入仓库名确认）。
 
-**Q6：`git push` 又卡住了**
-先确认是不是又回到了凭据问题：
+**Q6：`git push` 又卡住了（无响应）**
+先确认是不是凭据助手又弹不出窗口：
 
 ```powershell
 git config --system --get credential.helper
 ```
 
-如果输出 `helper-selector`，说明还是 GitHub Desktop 的助手。按第 4 节末段改成 `manager` 即可。
+如果输出 `helper-selector`，说明还是 GitHub Desktop 那个交互式助手。在**有桌面的** PowerShell 里重跑一次，让它弹窗完成授权即可。
+
+**Q7：`remote: Repository not found`**
+两种可能：
+① 仓库还没建 —— 见第 4 节，去网页建一个空仓库；
+② 仓库名或远程地址拼错了 —— 用 `git remote -v` 核对。
+
+**Q8：怎么一劳永逸避免权限问题**
+去建一个带 `repo` 权限的 **Personal Access Token**（classic），推送到提示时用它当密码。
+这样就不依赖 GitHub Desktop 的 OAuth 了，建仓库、推送都能做，不会再遇到本次这类问题。
 
 ---
 
